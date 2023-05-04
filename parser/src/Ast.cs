@@ -13,3 +13,9 @@ public class DummyStatement : Statement
 {
     public string Content { get; set; }
 }
+
+public class ImportStatement : Statement
+{
+    public string? From { get; set; }
+    public string Name { get; set; }
+}

@@ -108,7 +108,7 @@ public static class ParseTreeToASTExtensions
         }
   
         var parametersWithDefaultValues = parameters
-            .Select(p => new KeyValuePair<TfpdefContext, TestContext>(
+            .Select(p => new KeyValuePair<TfpdefContext, TestContext?>(
                 p,
                 defaultValuesByParameter.ContainsKey(p) ? defaultValuesByParameter[p] : null));
   
@@ -116,9 +116,123 @@ public static class ParseTreeToASTExtensions
             .Select(pair => new ParameterDeclaration
             {
                 Name = pair.Key.name().GetText(),
-                DefaultValue = new StringLiteral { Value = pair.Value?.GetText() }
-                // TODO: DefaultValue = pair.Value.ToAst(issues)
+                DefaultValue = pair.Value?.ToAst(issues) ?? null
             })
             .ToList();
+    }
+    
+    public static Expression ToAst(this TestContext context, List<Issue> issues)
+    {
+        if (context.test() == null && context.or_test().Length == 1)
+            return context.or_test()[0].ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+    public static Expression ToAst(this Or_testContext context, List<Issue> issues)
+    {
+        if (context.and_test().Length == 1)
+            return context.and_test()[0].ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+    public static Expression ToAst(this And_testContext context, List<Issue> issues)
+    {
+        if (context.not_test().Length == 1)
+            return context.not_test()[0].ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+    public static Expression ToAst(this Not_testContext context, List<Issue> issues)
+    {
+        if (context.comparison() != null)
+            return context.comparison().ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+    public static Expression ToAst(this ComparisonContext context, List<Issue> issues)
+    {
+        if (context.expr().Length == 1)
+            return context.expr()[0].ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+
+    public static Expression ToAst(this ExprContext context, List<Issue> issues)
+    {
+        if (context.xor_expr().Length == 1)
+            return context.xor_expr()[0].ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+    public static Expression ToAst(this Xor_exprContext context, List<Issue> issues)
+    {
+        if (context.and_expr().Length == 1)
+            return context.and_expr()[0].ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+    public static Expression ToAst(this And_exprContext context, List<Issue> issues)
+    {
+        if (context.shift_expr().Length == 1)
+            return context.shift_expr()[0].ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+    public static Expression ToAst(this Shift_exprContext context, List<Issue> issues)
+    {
+        if (context.arith_expr().Length == 1)
+            return context.arith_expr()[0].ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+
+    public static Expression ToAst(this Arith_exprContext context, List<Issue> issues)
+    {
+        if (context.term().Length == 1 &&
+            context.term()[0].factor().Length == 1 &&
+            context.term()[0].factor()[0].power() != null)
+            return context.term()[0].factor()[0].power().atom_expr().atom().ToAst(issues);
+  
+        // TODO
+        throw new NotImplementedException($"{context}");
+    }
+    
+    public static Expression ToAst(this AtomContext context, List<Issue> issues)
+    {
+        if (context.NUMBER() != null)
+            return new NumberLiteral { Value = context.NUMBER().GetText() };
+        if (context.STRING() != null && context.STRING().Length > 0)
+            return new StringLiteral { Value = string.Join("", context.STRING().Select(s => s.GetText())) };
+        if (context.TRUE() != null || context.FALSE() != null)
+            return new BooleanLiteral { Value = context.TRUE() != null ? context.TRUE().GetText() : context.FALSE().GetText() };
+        if (context.name() != null)
+            return new ReferenceExpression { Reference = context.name().GetText() };
+        if (context.OPEN_BRACK() != null)
+            return new ArrayLiteral
+            {
+                Value = context.GetText(),
+                Elements = context.testlist_comp().test()
+                    .Select(t => t.ToAst(issues)).ToList()
+            };
+
+        // TODO
+        throw new NotImplementedException($"{context}");
     }
 }

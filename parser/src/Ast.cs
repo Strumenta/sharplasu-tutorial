@@ -4,5 +4,12 @@ namespace Strumenta.Python3Parser;
 
 public class CompilationUnit : Node
 {
-    public List<string> Statements { get; set; }
+    public List<Statement> Statements { get; set; }
+}
+
+public abstract class Statement : Node {}
+
+public class DummyStatement : Statement
+{
+    public string Content { get; set; }
 }

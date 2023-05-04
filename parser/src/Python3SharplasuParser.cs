@@ -1,4 +1,5 @@
 using Antlr4.Runtime;
+using ExtensionMethods;
 using Strumenta.Sharplasu.Parsing;
 using Strumenta.Sharplasu.Validation;
 
@@ -18,7 +19,9 @@ public class Python3SharplasuParser : SharpLasuParser<CompilationUnit, Python3Pa
 
     protected override CompilationUnit ParseTreeToAst(Python3Parser.File_inputContext parseTreeRoot, bool considerPosition = true, List<Issue> issues = null)
     {
-        throw new NotImplementedException();
+        var cu = parseTreeRoot.ToAst(issues);
+        cu.AssignParents();
+        return cu;
     }
 
     protected override Python3Parser.File_inputContext InvokeRootRule(Python3Parser parser)

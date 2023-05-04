@@ -1,5 +1,7 @@
 using ExtensionMethods;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Strumenta.Sharplasu.Testing;
+using static Strumenta.Sharplasu.Testing.Asserts;
 
 namespace Strumenta.Python3Parser.Test;
 
@@ -53,5 +55,69 @@ public class ParserTest
                 new NumberLiteral { Value = ".366" },
                 new NumberLiteral { Value = ".124" }
             }));
+        
+        // Test the function declaration: _plates_simulation
+        var expectedPlatesSimulation = new FunctionDefinition
+        {
+            Name = "_plates_simulation",
+            Parameters = new IgnoreChildren<ParameterDeclaration>()
+        };
+        AssertASTsAreEqual(expectedPlatesSimulation, platesSimulationFuncDef);
+
+
+        var expectedTempsArgument = new ParameterDeclaration
+        {
+            Name = "temps",
+            DefaultValue = new ArrayLiteral
+            {
+                Value = "[.874,.765,.594,.439,.366,.124]",
+                Elements = new IgnoreChildren<Expression>()
+            }
+        };
+        AssertASTsAreEqual(expectedTempsArgument, temps);
+    }
+    
+    [TestMethod]
+    public void TestAST()
+    {
+        var expectedAST = new CompilationUnit
+        {
+            Statements = new List<Statement>
+            {
+                new ImportStatement { Name = "platec" },
+                new ImportStatement { Name = "time" },
+                new ImportStatement { Name = "numpy" },
+                new ImportStatement
+                {
+                    Name =
+                        "Step,add_noise_to_elevation,center_land,generate_world,get_verbose,initialize_ocean_and_thresholds,place_oceans_at_map_borders",
+                    From = "worldengine.generation"
+                },
+                new ImportStatement
+                {
+                    Name = "World,Size,GenerationParameters",
+                    From = "worldengine.model.world"
+                },
+                new FunctionDefinition
+                {
+                    Name = "generate_plates_simulation",
+                    Parameters = new IgnoreChildren<ParameterDeclaration>()
+                },
+                new FunctionDefinition
+                {
+                    Name = "_plates_simulation",
+                    Parameters = new IgnoreChildren<ParameterDeclaration>()
+                },
+                new FunctionDefinition
+                {
+                    Name = "world_gen",
+                    Parameters = new IgnoreChildren<ParameterDeclaration>()
+                }
+            }
+        };
+  
+        var parser = new Python3SharplasuParser();
+        var result = parser.GetTreeForText(GetExamplePythonFileContent());
+        AssertASTsAreEqual(expectedAST, result.Root);
     }
 }

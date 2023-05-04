@@ -1,5 +1,6 @@
 using Antlr4.Runtime;
 using Strumenta.Python3Parser;
+using Strumenta.Sharplasu.Parsing;
 using Strumenta.Sharplasu.Validation;
 using static Strumenta.Python3Parser.Python3Parser;
 
@@ -26,8 +27,7 @@ public static class ParseTreeToASTExtensions
        }
        else if (context.compound_stmt() != null)
        {
-           // TODO
-           return new List<Statement>();
+           return new List<Statement> { context.compound_stmt().ToAst(issues) };
        }
       
        issues.Add(new Issue(
@@ -70,5 +70,60 @@ GetText()
        }
       
        throw new NotImplementedException($"{context}");
+   }
+   
+   public static Statement ToAst(this Compound_stmtContext context, List<Issue> issues)
+   {
+       if (context.funcdef() != null)
+       {
+           return context.funcdef().ToAst(issues);
+       }
+  
+       // TODO
+       throw new NotImplementedException($"{context}");
+   }
+   
+   public static FunctionDefinition ToAst(this FuncdefContext context, List<Issue> issues)
+   {
+       return new FunctionDefinition
+       {
+           Name = context.name().GetText(),
+           Parameters = context.parameters().ToAst(issues),
+           // TODO: Body = context.block().ToAst(issues)
+       };
+   }
+
+   public static List<ParameterDeclaration> ToAst(this ParametersContext context, List<Issue> issues)
+   {
+       return context.typedargslist() == null ? new List<ParameterDeclaration>() : context.typedargslist().ToAst(issues);
+   }
+   
+   public static List<ParameterDeclaration> ToAst(this TypedargslistContext context, List<Issue> issues)
+   {
+       var parameters = context.tfpdef().OrderBy(t => t.Position().Start).ToList();
+       var defaultValues = context.test().OrderBy(v => v.Position().Start).ToList();
+       var defaultValuesByParameter = new Dictionary<TfpdefContext, TestContext>();
+  
+       foreach (var defaultValue in defaultValues)
+       {
+           var parameter = parameters.Last(p =>
+               p.Position().End < defaultValue.Position().Start);
+           if (parameter != null)
+               defaultValuesByParameter.Add(parameter, defaultValue);
+       }
+  
+       var parametersWithDefaultValues = parameters
+           .Select(p => new KeyValuePair<TfpdefContext, TestContext>(
+               p,
+               defaultValuesByParameter.ContainsKey(p) ? defaultValuesByParameter[p] : null));
+  
+       return parametersWithDefaultValues
+           .Select(pair => new ParameterDeclaration
+           {
+               Name = pair.Key.name().GetText(),
+               DefaultValue = new StringLiteral { Value = pair.Value?.GetText() }
+               // TODO: DefaultValue = pair.Value.ToAst(issues)
+           })
+           .ToList();
    }
 }

@@ -120,4 +120,30 @@ public class ParserTest
         var result = parser.GetTreeForText(GetExamplePythonFileContent());
         AssertASTsAreEqual(expectedAST, result.Root);
     }
+    
+    [TestMethod]
+    public void TestTraversing()
+    {
+        var parser = new Python3SharplasuParser();
+        var result = parser.GetTreeForText(GetExamplePythonFileContent());
+      
+        // Search all function parameters named "height"
+        var heightParameters = result.Root
+            .SearchByType<ParameterDeclaration>()
+            .Where(p => p.Name == "height")
+            .ToList();
+        Assert.AreEqual(3, heightParameters.Count);
+        
+        // We can search the closest ancestor of a given type.
+        // For each of the "height" parameters we just found,
+        // we expect the closest FunctionDefinition to be respectively:
+        // generate_plates_simulation, _plates_simulation and world_gen
+        var functionDefinitionNames = heightParameters
+            .Select(param => param.FindAncestorOfType<FunctionDefinition>())
+            .Select(funcDef => funcDef.Name)
+            .ToList();
+        Assert.IsTrue(
+            new [] { "generate_plates_simulation", "_plates_simulation", "world_gen" }
+                .SequenceEqual(functionDefinitionNames));
+    }
 }
